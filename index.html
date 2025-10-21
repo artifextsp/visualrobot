@@ -1,0 +1,1991 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intérprete Robot Gráfico Educativo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 8px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            height: calc(100vh - 16px);
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: linear-gradient(45deg, #4CAF50, #2196F3);
+            color: white;
+            padding: 12px 15px;
+            text-align: center;
+            position: relative;
+        }
+        .header h1 { 
+            font-size: 1.5em; 
+            margin-bottom: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .header p { font-size: 0.8em; opacity: 0.9; }
+        .credits {
+            position: absolute;
+            top: 8px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 10px;
+            font-weight: bold;
+            backdrop-filter: blur(5px);
+        }
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        /* Editor de código - COMPACTO */
+        .code-panel {
+            width: 380px;
+            display: flex;
+            flex-direction: column;
+            border-right: 2px solid #ddd;
+            background: #f8f9fa;
+        }
+        .code-editor {
+            flex: 1;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        .editor-title {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: #333;
+        }
+        #robotCodeEditor {
+            flex: 1;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            resize: none;
+            background: white;
+            line-height: 1.5;
+        }
+        #robotCodeEditor:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        
+        /* Botones de archivo */
+        .file-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .file-btn {
+            flex: 1;
+            padding: 8px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        .file-btn:hover {
+            background: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+            transform: scale(1.02);
+        }
+        #fileInput {
+            display: none;
+        }
+        
+        /* Autocompletado */
+        .autocomplete-container {
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .autocomplete-list {
+            position: absolute;
+            background: white;
+            border: 2px solid #2196F3;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            max-height: 180px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            bottom: 100%;
+            left: 0;
+            right: 0;
+        }
+        .autocomplete-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .autocomplete-item:hover,
+        .autocomplete-item.selected {
+            background: #2196F3;
+            color: white;
+        }
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+        
+        /* Panel del robot */
+        .robot-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f0f0f0;
+        }
+        .robot-controls {
+            padding: 10px;
+            background: white;
+            border-bottom: 2px solid #ddd;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .control-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
+            text-transform: uppercase;
+        }
+        .control-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        .control-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .control-btn.run {
+            background: linear-gradient(45deg, #FF9800, #FFB74D);
+            color: white;
+        }
+        .control-btn.run:hover {
+            background: linear-gradient(45deg, #F57C00, #FF9800);
+            transform: scale(1.05);
+        }
+        .control-btn.reset {
+            background: linear-gradient(45deg, #2196F3, #64B5F6);
+            color: white;
+        }
+        .control-btn.reset:hover {
+            background: linear-gradient(45deg, #1976D2, #2196F3);
+            transform: scale(1.05);
+        }
+        .control-btn.clear {
+            background: linear-gradient(45deg, #f44336, #e57373);
+            color: white;
+        }
+        .control-btn.clear:hover {
+            background: linear-gradient(45deg, #d32f2f, #f44336);
+            transform: scale(1.05);
+        }
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .speed-control label {
+            font-size: 11px;
+            font-weight: 600;
+        }
+        #speedSlider {
+            width: 120px;
+        }
+        
+        /* Modo construcción */
+        .construction-tools {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 8px;
+            background: #fff3cd;
+            border-bottom: 2px solid #ddd;
+        }
+        .construction-tools.hidden {
+            display: none;
+        }
+        .tool-btn {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tool-btn.active {
+            background: #2196F3;
+            color: white;
+            border-color: #2196F3;
+        }
+        .tool-btn:hover {
+            transform: scale(1.05);
+        }
+        .color-picker {
+            display: flex;
+            gap: 4px;
+        }
+        .color-option {
+            width: 25px;
+            height: 25px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .color-option.active {
+            border: 3px solid #333;
+            transform: scale(1.1);
+        }
+        
+        .robot-canvas-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            overflow: auto;
+        }
+        #robotCanvas {
+            background: white;
+            border: 2px solid #ddd;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            image-rendering: crisp-edges;
+        }
+        
+        /* Panel de información */
+        .info-panel {
+            width: 280px;
+            display: flex;
+            flex-direction: column;
+            border-left: 2px solid #ddd;
+            background: #f8f9fa;
+            overflow-y: auto;
+        }
+        .info-section {
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .section-title {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+            text-transform: uppercase;
+        }
+        #robotOutput {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            line-height: 1.4;
+            max-height: 150px;
+            overflow-y: auto;
+            background: white;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .mode-toggle {
+            display: flex;
+            gap: 6px;
+        }
+        .mode-toggle-btn {
+            flex: 1;
+            padding: 6px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .mode-toggle-btn.active {
+            background: #2196F3;
+            color: white;
+            border-color: #2196F3;
+        }
+        .examples-select {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 11px;
+            background: white;
+            cursor: pointer;
+        }
+        .commands-list {
+            font-size: 11px;
+            line-height: 1.5;
+        }
+        .commands-list h4 {
+            font-size: 11px;
+            margin: 8px 0 4px;
+            color: #2196F3;
+        }
+        .commands-list code {
+            background: #e8f4fd;
+            padding: 2px 4px;
+            border-radius: 3px;
+            color: #0066cc;
+            font-size: 10px;
+        }
+        
+        /* Sensores */
+        .sensor-item {
+            padding: 4px;
+            background: #e8f4fd;
+            border-radius: 3px;
+            margin: 2px 0;
+            font-size: 10px;
+            font-family: monospace;
+        }
+        
+        /* Animaciones */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Intérprete Robot Gráfico Educativo</h1>
+            <p>Aprende a programar con el robot gráfico</p>
+            <div class="credits">Designed by Hansel Peña Diaz | 11430990728</div>
+        </div>
+        
+        <div class="main-content">
+            <!-- Panel del código -->
+            <div class="code-panel">
+                <div class="code-editor">
+                    <div class="editor-title">✏️ Editor de Pseudocódigo</div>
+                    <div class="autocomplete-container">
+                        <textarea id="robotCodeEditor" spellcheck="false">INICIO
+    // Demo de comandos básicos
+    pintar()
+    avanzar()
+    girarDerecha()
+    avanzar(2)
+FIN</textarea>
+                        <div class="autocomplete-list" id="autocompleteList"></div>
+                    </div>
+                    <div class="file-buttons">
+                        <button class="file-btn" onclick="saveAlgorithm()">
+                            💾 Guardar
+                        </button>
+                        <button class="file-btn" onclick="document.getElementById('fileInput').click()">
+                            📂 Abrir
+                        </button>
+                        <input type="file" id="fileInput" accept=".txt" onchange="loadAlgorithm(event)">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Panel del robot -->
+            <div class="robot-panel">
+                <div class="robot-controls">
+                    <div class="control-title">🎮 Controles:</div>
+                    <div class="control-buttons">
+                        <button class="control-btn run" onclick="runRobotCode()" id="runBtn">
+                            ▶ Ejecutar
+                        </button>
+                        <button class="control-btn reset" onclick="stopRobotCode()">
+                            ⏸ Detener
+                        </button>
+                        <button class="control-btn clear" onclick="clearRobotCanvas()">
+                            ✨ Limpiar
+                        </button>
+                    </div>
+                    <div class="speed-control">
+                        <label>⚡ Velocidad:</label>
+                        <input type="range" id="speedSlider" min="1" max="10" value="5">
+                        <span id="speedValue">5</span>
+                    </div>
+                </div>
+                
+                <!-- Herramientas de construcción -->
+                <div class="construction-tools hidden" id="constructionTools">
+                    <button class="tool-btn active" id="wallTool" onclick="selectTool('wall')">
+                        🧱 Muro
+                    </button>
+                    <button class="tool-btn" id="startTool" onclick="selectTool('start')">
+                        🔵 Inicio
+                    </button>
+                    <button class="tool-btn" id="goalTool" onclick="selectTool('goal')">
+                        ⭐ Meta
+                    </button>
+                    <button class="tool-btn" id="eraserTool" onclick="selectTool('eraser')">
+                        ❌ Borrar
+                    </button>
+                    <div class="color-picker" id="colorPicker">
+                        <div class="color-option active" style="background: #808080" onclick="selectWallColor('#808080')"></div>
+                        <div class="color-option" style="background: #8B4513" onclick="selectWallColor('#8B4513')"></div>
+                        <div class="color-option" style="background: #FF6B6B" onclick="selectWallColor('#FF6B6B')"></div>
+                        <div class="color-option" style="background: #4ECDC4" onclick="selectWallColor('#4ECDC4')"></div>
+                    </div>
+                </div>
+                
+                <div class="robot-canvas-container">
+                    <canvas id="robotCanvas" width="600" height="480"></canvas>
+                </div>
+            </div>
+            
+            <!-- Panel de información -->
+            <div class="info-panel">
+                <div class="info-section">
+                    <div class="section-title">🎮 Modo</div>
+                    <div class="mode-toggle">
+                        <button class="mode-toggle-btn active" id="execModeBtn" onclick="toggleMode('exec')">
+                            Ejecución
+                        </button>
+                        <button class="mode-toggle-btn" id="constModeBtn" onclick="toggleMode('const')">
+                            Construcción
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="info-section">
+                    <div class="section-title">📊 Salida</div>
+                    <div id="robotOutput">🤖 Robot listo<br>Escribe código y ejecuta</div>
+                </div>
+                
+                <div class="info-section">
+                    <div class="section-title">📚 Retos y Figuras</div>
+                    <select class="examples-select" onchange="loadExample(this.value); this.value='';">
+                        <option value="">📚 Seleccionar...</option>
+                        <optgroup label="🎯 Retos con Mapas">
+                            <option value="demo">Demo - Funcionalidades</option>
+                            <option value="map1">Reto 1 - Laberinto Simple</option>
+                            <option value="map2">Reto 2 - Camino en Zigzag</option>
+                            <option value="map3">Reto 3 - Esquinas</option>
+                            <option value="map4">Reto 4 - Laberinto en U</option>
+                            <option value="map5">Reto 5 - Escalera</option>
+                            <option value="map6">Reto 6 - Espiral</option>
+                            <option value="map7">Reto 7 - Cruz</option>
+                            <option value="map8">Reto 8 - Laberinto Complejo</option>
+                            <option value="map9">Reto 9 - Serpentina</option>
+                            <option value="map10">Reto 10 - Desafío Final</option>
+                            <option value="map11">Reto 11 - Pasillo Estrecho</option>
+                            <option value="map12">Reto 12 - Cuatro Habitaciones</option>
+                            <option value="map13">Reto 13 - Isla Central</option>
+                            <option value="map14">Reto 14 - Laberinto Diagonal</option>
+                            <option value="map15">Reto 15 - Torre de Obstáculos</option>
+                        </optgroup>
+                        <optgroup label="🎨 Figuras Geométricas">
+                            <option value="fig1">Figura 1 - Cuadrado Simple</option>
+                            <option value="fig2">Figura 2 - Rectángulo</option>
+                            <option value="fig3">Figura 3 - Escalera Ascendente</option>
+                            <option value="fig4">Figura 4 - Zigzag</option>
+                            <option value="fig5">Figura 5 - Espiral Cuadrada</option>
+                            <option value="fig6">Figura 6 - Cruz</option>
+                            <option value="fig7">Figura 7 - Diamante</option>
+                            <option value="fig8">Figura 8 - Letras L</option>
+                            <option value="fig9">Figura 9 - Patrón de Peine</option>
+                            <option value="fig10">Figura 10 - Escalones</option>
+                            <option value="fig11">Figura 11 - Laberinto en Espiral</option>
+                            <option value="fig12">Figura 12 - Patrón de Ondas</option>
+                            <option value="fig13">Figura 13 - Tablero de Ajedrez</option>
+                            <option value="fig14">Figura 14 - Estrella</option>
+                            <option value="fig15">Figura 15 - Flor</option>
+                        </optgroup>
+                    </select>
+                </div>
+                
+                <div class="info-section">
+                    <div class="section-title">📖 Comandos</div>
+                    <div class="commands-list">
+                        <h4>🚶 Movimiento:</h4>
+                        • <code>avanzar(n)</code><br>
+                        • <code>retroceder(n)</code><br>
+                        • <code>girarDerecha(n)</code><br>
+                        • <code>girarIzquierda(n)</code><br>
+                        
+                        <h4>🎨 Dibujo:</h4>
+                        • <code>pintar()</code><br>
+                        • <code>noPintar()</code><br>
+                        
+                        <h4>🔄 Control:</h4>
+                        • <code>PARA i DE 1 A n</code><br>
+                        • <code>MIENTRAS condicion</code><br>
+                        • <code>SI condicion ENTONCES</code><br>
+                        
+                        <h4>🔍 Sensores:</h4>
+                        <div class="sensor-item">hayMuro()</div>
+                        <div class="sensor-item">esMeta()</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Estado del aplicativo
+        const app = {
+            mode: 'exec', // 'exec' o 'const'
+            selectedTool: 'wall',
+            selectedColor: '#808080',
+            robot: {
+                x: 7,
+                y: 7,
+                direction: 0, // 0=derecha, 1=abajo, 2=izquierda, 3=arriba (CORREGIDO)
+                cellSize: 30,
+                isPainting: false,
+                speed: 5,
+                trail: new Map(),
+                walls: new Map(),
+                startPoint: { x: 7, y: 7 },
+                goalPoint: null
+            },
+            variables: {},
+            output: [],
+            isRunning: false
+        };
+
+        const canvas = document.getElementById('robotCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Keywords para autocompletado
+        const keywords = [
+            'INICIO', 'FIN', 'PARA', 'DE', 'A', 'FINPARA',
+            'MIENTRAS', 'FINMIENTRAS', 'SI', 'ENTONCES', 'SINO', 'FINSI',
+            'DECLARAR', 'avanzar', 'retroceder', 'girarDerecha', 'girarIzquierda',
+            'pintar', 'noPintar', 'hayMuro', 'esMeta'
+        ];
+
+        // GUARDAR ALGORITMO
+        function saveAlgorithm() {
+            const code = document.getElementById('robotCodeEditor').value;
+            const blob = new Blob([code], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'algoritmo_robot.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            logOutput('💾 Algoritmo guardado');
+        }
+
+        // ABRIR ALGORITMO
+        function loadAlgorithm(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('robotCodeEditor').value = e.target.result;
+                logOutput('📂 Algoritmo cargado');
+            };
+            reader.readAsText(file);
+            
+            // Resetear el input para poder cargar el mismo archivo de nuevo
+            event.target.value = '';
+        }
+
+        // Autocompletado
+        let autocompleteIndex = -1;
+        const editor = document.getElementById('robotCodeEditor');
+        const autocompleteList = document.getElementById('autocompleteList');
+        
+        editor.addEventListener('input', function(e) {
+            const text = this.value;
+            const cursorPos = this.selectionStart;
+            const textBeforeCursor = text.substring(0, cursorPos);
+            
+            // Obtener la palabra actual (desde el último espacio o salto de línea)
+            let wordStart = cursorPos;
+            while (wordStart > 0 && !/[\s\n]/.test(text[wordStart - 1])) {
+                wordStart--;
+            }
+            const currentWord = text.substring(wordStart, cursorPos);
+            
+            if (currentWord.length >= 2) {
+                const matches = keywords.filter(kw => 
+                    kw.toLowerCase().startsWith(currentWord.toLowerCase())
+                );
+                
+                if (matches.length > 0) {
+                    showAutocomplete(matches);
+                } else {
+                    hideAutocomplete();
+                }
+            } else {
+                hideAutocomplete();
+            }
+        });
+        
+        editor.addEventListener('keydown', function(e) {
+            const items = autocompleteList.querySelectorAll('.autocomplete-item');
+            
+            if (autocompleteList.style.display === 'block') {
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    autocompleteIndex = Math.min(autocompleteIndex + 1, items.length - 1);
+                    updateAutocompleteSelection();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    autocompleteIndex = Math.max(autocompleteIndex - 1, 0);
+                    updateAutocompleteSelection();
+                } else if (e.key === 'Enter' || e.key === 'Tab') {
+                    if (autocompleteIndex >= 0) {
+                        e.preventDefault();
+                        selectAutocomplete(items[autocompleteIndex].textContent);
+                    }
+                } else if (e.key === 'Escape') {
+                    hideAutocomplete();
+                }
+            }
+        });
+        
+        function showAutocomplete(matches) {
+            autocompleteList.innerHTML = '';
+            matches.forEach((match, index) => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                if (index === 0) item.classList.add('selected');
+                item.textContent = match;
+                item.onclick = () => selectAutocomplete(match);
+                autocompleteList.appendChild(item);
+            });
+            autocompleteList.style.display = 'block';
+            autocompleteIndex = 0;
+        }
+        
+        function hideAutocomplete() {
+            autocompleteList.style.display = 'none';
+            autocompleteIndex = -1;
+        }
+        
+        function updateAutocompleteSelection() {
+            const items = autocompleteList.querySelectorAll('.autocomplete-item');
+            items.forEach((item, index) => {
+                item.classList.toggle('selected', index === autocompleteIndex);
+            });
+        }
+        
+        function selectAutocomplete(text) {
+            const cursorPos = editor.selectionStart;
+            const fullText = editor.value;
+            const textBefore = fullText.substring(0, cursorPos);
+            const textAfter = fullText.substring(cursorPos);
+            
+            // Encontrar el inicio de la palabra actual sin dividir por líneas
+            let wordStart = cursorPos;
+            while (wordStart > 0 && !/\s/.test(fullText[wordStart - 1])) {
+                wordStart--;
+            }
+            
+            // Reemplazar solo la palabra parcial con el texto completo
+            const newText = textBefore.substring(0, wordStart) + text + textAfter;
+            editor.value = newText;
+            
+            // Posicionar el cursor después de la palabra autocompletada
+            const newCursorPos = wordStart + text.length;
+            editor.selectionStart = editor.selectionEnd = newCursorPos;
+            
+            hideAutocomplete();
+            editor.focus();
+        }
+
+        // Actualizar velocidad
+        document.getElementById('speedSlider').addEventListener('input', function() {
+            app.robot.speed = this.value;
+            document.getElementById('speedValue').textContent = this.value;
+        });
+        
+        // Cambiar modo
+        function toggleMode(mode) {
+            app.mode = mode;
+            document.getElementById('execModeBtn').classList.toggle('active', mode === 'exec');
+            document.getElementById('constModeBtn').classList.toggle('active', mode === 'const');
+            document.getElementById('constructionTools').classList.toggle('hidden', mode === 'exec');
+            
+            if (mode === 'const') {
+                canvas.style.cursor = 'crosshair';
+                logOutput('🛠️ Modo construcción activo');
+            } else {
+                canvas.style.cursor = 'default';
+                logOutput('🎮 Modo ejecución activo');
+            }
+        }
+        
+        // Seleccionar herramienta
+        function selectTool(tool) {
+            app.selectedTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tool + 'Tool').classList.add('active');
+            document.getElementById('colorPicker').style.display = tool === 'wall' ? 'flex' : 'none';
+        }
+        
+        // Seleccionar color de muro
+        function selectWallColor(color) {
+            app.selectedColor = color;
+            document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+        
+        // Canvas click handler para modo construcción
+        canvas.addEventListener('click', function(e) {
+            if (app.mode !== 'const') return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.floor((e.clientX - rect.left) / app.robot.cellSize);
+            const y = Math.floor((e.clientY - rect.top) / app.robot.cellSize);
+            const key = `${x},${y}`;
+            
+            switch(app.selectedTool) {
+                case 'wall':
+                    if (!app.robot.walls.has(key)) {
+                        app.robot.walls.set(key, app.selectedColor);
+                        logOutput(`🧱 Muro en (${x}, ${y})`);
+                    }
+                    break;
+                    
+                case 'start':
+                    app.robot.startPoint = {x, y};
+                    app.robot.x = x;
+                    app.robot.y = y;
+                    logOutput(`🔵 Inicio en (${x}, ${y})`);
+                    break;
+                    
+                case 'goal':
+                    app.robot.goalPoint = {x, y};
+                    logOutput(`⭐ Meta en (${x}, ${y})`);
+                    break;
+                    
+                case 'eraser':
+                    if (app.robot.walls.has(key)) {
+                        app.robot.walls.delete(key);
+                        logOutput(`❌ Borrado (${x}, ${y})`);
+                    }
+                    if (app.robot.goalPoint && app.robot.goalPoint.x === x && app.robot.goalPoint.y === y) {
+                        app.robot.goalPoint = null;
+                        logOutput('❌ Meta borrada');
+                    }
+                    break;
+            }
+            redrawAll();
+        });
+        
+        // Inicializar canvas
+        function initCanvas() {
+            ctx.fillStyle = '#f0f0f0';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            drawRobot();
+        }
+        
+        // Dibujar grid
+        function drawGrid() {
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 1;
+            const cellSize = app.robot.cellSize;
+            
+            for (let i = 0; i <= canvas.width; i += cellSize) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            
+            for (let i = 0; i <= canvas.height; i += cellSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+        }
+        
+        // Dibujar muros
+        function drawWalls() {
+            app.robot.walls.forEach((color, key) => {
+                const [x, y] = key.split(',').map(Number);
+                const cellSize = app.robot.cellSize;
+                
+                ctx.fillStyle = color;
+                ctx.fillRect(x * cellSize + 2, y * cellSize + 2, cellSize - 4, cellSize - 4);
+                
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x * cellSize + 2, y * cellSize + 2, cellSize - 4, cellSize - 4);
+            });
+        }
+        
+        // Dibujar meta
+        function drawGoal() {
+            if (!app.robot.goalPoint) return;
+            
+            const cellSize = app.robot.cellSize;
+            const x = app.robot.goalPoint.x * cellSize + cellSize / 2;
+            const y = app.robot.goalPoint.y * cellSize + cellSize / 2;
+            
+            // Estrella amarilla
+            ctx.fillStyle = '#FFD700';
+            ctx.strokeStyle = '#FFA500';
+            ctx.lineWidth = 2;
+            
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+                const radius = i % 2 === 0 ? cellSize / 3 : cellSize / 6;
+                const px = x + Math.cos(angle) * radius;
+                const py = y + Math.sin(angle) * radius;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        }
+        
+        // Dibujar punto de inicio
+        function drawStart() {
+            const cellSize = app.robot.cellSize;
+            const x = app.robot.startPoint.x * cellSize + cellSize / 2;
+            const y = app.robot.startPoint.y * cellSize + cellSize / 2;
+            
+            // Círculo azul
+            ctx.fillStyle = 'rgba(33, 150, 243, 0.3)';
+            ctx.strokeStyle = '#2196F3';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x, y, cellSize / 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        // Dibujar robot CUADRADO CON LLANTAS Y LÍNEA AMARILLA GRUESA AL FRENTE
+        function drawRobot() {
+            const cellSize = app.robot.cellSize;
+            const centerX = app.robot.x * cellSize + cellSize / 2;
+            const centerY = app.robot.y * cellSize + cellSize / 2;
+            const robotSize = cellSize * 0.7;
+            
+            // Calcular ángulo de rotación
+            const angle = app.robot.direction * Math.PI / 2;
+            
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(angle);
+            
+            // Cuerpo principal (cuadrado gris)
+            ctx.fillStyle = '#888888';
+            ctx.fillRect(-robotSize/2, -robotSize/2, robotSize, robotSize);
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(-robotSize/2, -robotSize/2, robotSize, robotSize);
+            
+            // Llantas (círculos de colores en las esquinas)
+            const wheelRadius = robotSize * 0.18;
+            const wheelOffset = robotSize * 0.32;
+            
+            // Llanta superior izquierda - roja
+            ctx.fillStyle = '#FF6B6B';
+            ctx.beginPath();
+            ctx.arc(-wheelOffset, -wheelOffset, wheelRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            
+            // Llanta superior derecha - turquesa
+            ctx.fillStyle = '#4ECDC4';
+            ctx.beginPath();
+            ctx.arc(wheelOffset, -wheelOffset, wheelRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Llanta inferior izquierda - verde
+            ctx.fillStyle = '#95E1D3';
+            ctx.beginPath();
+            ctx.arc(-wheelOffset, wheelOffset, wheelRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Llanta inferior derecha - amarilla
+            ctx.fillStyle = '#FFE66D';
+            ctx.beginPath();
+            ctx.arc(wheelOffset, wheelOffset, wheelRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // LÍNEA AMARILLA GRUESA AL FRENTE (indicador inequívoco de dirección)
+            ctx.fillStyle = '#FFD700';
+            ctx.fillRect(robotSize/2 - 6, -robotSize/3, 6, robotSize * 2/3);
+            
+            // Borde negro para la línea amarilla
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(robotSize/2 - 6, -robotSize/3, 6, robotSize * 2/3);
+            
+            ctx.restore();
+        }
+
+        // Comandos del robot con parámetros - CORRECCIÓN DE DIRECCIÓN
+        async function avanzar(times = 1) {
+            for (let i = 0; i < times; i++) {
+                // CORRECCIÓN: Ahora la dirección 0 es derecha (línea amarilla apunta a la derecha)
+                const dx = [1, 0, -1, 0][app.robot.direction]; // derecha, abajo, izquierda, arriba
+                const dy = [0, 1, 0, -1][app.robot.direction];
+                
+                const newX = app.robot.x + dx;
+                const newY = app.robot.y + dy;
+                
+                if (newX < 0 || newY < 0 || 
+                    newX >= Math.floor(canvas.width / app.robot.cellSize) ||
+                    newY >= Math.floor(canvas.height / app.robot.cellSize)) {
+                    logOutput('⚠️ Fuera de límites');
+                    return;
+                }
+                
+                if (app.robot.walls.has(`${newX},${newY}`)) {
+                    logOutput('⚠️ Hay un muro');
+                    return;
+                }
+                
+                await animateMovement(app.robot.x, app.robot.y, newX, newY);
+                
+                if (app.robot.isPainting) {
+                    drawLine(app.robot.x, app.robot.y, newX, newY);
+                }
+                
+                app.robot.x = newX;
+                app.robot.y = newY;
+                
+                logOutput(`Avanzar → (${app.robot.x}, ${app.robot.y})`);
+            }
+        }
+
+        async function retroceder(times = 1) {
+            for (let i = 0; i < times; i++) {
+                // CORRECCIÓN: Ahora la dirección 0 es derecha (línea amarilla apunta a la derecha)
+                const dx = [1, 0, -1, 0][app.robot.direction]; // derecha, abajo, izquierda, arriba
+                const dy = [0, 1, 0, -1][app.robot.direction];
+                
+                const newX = app.robot.x - dx;
+                const newY = app.robot.y - dy;
+                
+                if (newX < 0 || newY < 0 || 
+                    newX >= Math.floor(canvas.width / app.robot.cellSize) ||
+                    newY >= Math.floor(canvas.height / app.robot.cellSize)) {
+                    logOutput('⚠️ Fuera de límites');
+                    return;
+                }
+                
+                if (app.robot.walls.has(`${newX},${newY}`)) {
+                    logOutput('⚠️ Hay un muro');
+                    return;
+                }
+                
+                await animateMovement(app.robot.x, app.robot.y, newX, newY);
+                
+                if (app.robot.isPainting) {
+                    drawLine(app.robot.x, app.robot.y, newX, newY);
+                }
+                
+                app.robot.x = newX;
+                app.robot.y = newY;
+                
+                logOutput(`Retroceder → (${app.robot.x}, ${app.robot.y})`);
+            }
+        }
+
+        async function girarDerecha(times = 1) {
+            for (let i = 0; i < times; i++) {
+                await animateRotation(1);
+                app.robot.direction = (app.robot.direction + 1) % 4;
+                logOutput('Girar derecha ↻');
+            }
+        }
+
+        async function girarIzquierda(times = 1) {
+            for (let i = 0; i < times; i++) {
+                await animateRotation(-1);
+                app.robot.direction = (app.robot.direction + 3) % 4;
+                logOutput('Girar izquierda ↺');
+            }
+        }
+
+        function pintar() {
+            app.robot.isPainting = true;
+            logOutput('🎨 Pintar ON');
+        }
+
+        function noPintar() {
+            app.robot.isPainting = false;
+            logOutput('🚫 Pintar OFF');
+        }
+        
+        // Sensores - CORRECCIÓN DE DIRECCIÓN
+        function hayMuro() {
+            const dx = [1, 0, -1, 0][app.robot.direction]; // derecha, abajo, izquierda, arriba
+            const dy = [0, 1, 0, -1][app.robot.direction];
+            const nextX = app.robot.x + dx;
+            const nextY = app.robot.y + dy;
+            
+            return app.robot.walls.has(`${nextX},${nextY}`) ||
+                   nextX < 0 || nextY < 0 ||
+                   nextX >= Math.floor(canvas.width / app.robot.cellSize) ||
+                   nextY >= Math.floor(canvas.height / app.robot.cellSize);
+        }
+        
+        function esMeta() {
+            if (!app.robot.goalPoint) return false;
+            return app.robot.x === app.robot.goalPoint.x && 
+                   app.robot.y === app.robot.goalPoint.y;
+        }
+
+        // Animación de movimiento
+        async function animateMovement(fromX, fromY, toX, toY) {
+            const steps = 10 - app.robot.speed + 1;
+            const cellSize = app.robot.cellSize;
+            
+            for (let i = 1; i <= steps; i++) {
+                const currentX = fromX + (toX - fromX) * i / steps;
+                const currentY = fromY + (toY - fromY) * i / steps;
+                
+                // Guardar posición temporal para animación
+                const tempX = app.robot.x;
+                const tempY = app.robot.y;
+                app.robot.x = currentX;
+                app.robot.y = currentY;
+                
+                redrawAll();
+                
+                // Restaurar posición real
+                app.robot.x = tempX;
+                app.robot.y = tempY;
+                
+                await sleep(30);
+            }
+        }
+
+        // Animación de rotación
+        async function animateRotation(direction) {
+            const steps = 10 - app.robot.speed + 1;
+            const startDir = app.robot.direction;
+            
+            for (let i = 1; i <= steps; i++) {
+                // Interpolar dirección
+                const progress = i / steps;
+                const tempDir = startDir + direction * progress;
+                
+                // Dibujar robot con dirección interpolada
+                const cellSize = app.robot.cellSize;
+                const centerX = app.robot.x * cellSize + cellSize / 2;
+                const centerY = app.robot.y * cellSize + cellSize / 2;
+                const robotSize = cellSize * 0.7;
+                const angle = tempDir * Math.PI / 2;
+                
+                redrawAll();
+                
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(angle);
+                
+                // Redibujar robot con rotación animada (mismo código que drawRobot)
+                ctx.fillStyle = '#888888';
+                ctx.fillRect(-robotSize/2, -robotSize/2, robotSize, robotSize);
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(-robotSize/2, -robotSize/2, robotSize, robotSize);
+                
+                const wheelRadius = robotSize * 0.18;
+                const wheelOffset = robotSize * 0.32;
+                
+                ctx.fillStyle = '#FF6B6B';
+                ctx.beginPath();
+                ctx.arc(-wheelOffset, -wheelOffset, wheelRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                ctx.fillStyle = '#4ECDC4';
+                ctx.beginPath();
+                ctx.arc(wheelOffset, -wheelOffset, wheelRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                ctx.fillStyle = '#95E1D3';
+                ctx.beginPath();
+                ctx.arc(-wheelOffset, wheelOffset, wheelRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                ctx.fillStyle = '#FFE66D';
+                ctx.beginPath();
+                ctx.arc(wheelOffset, wheelOffset, wheelRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                ctx.fillStyle = '#FFD700';
+                ctx.fillRect(robotSize/2 - 6, -robotSize/3, 6, robotSize * 2/3);
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(robotSize/2 - 6, -robotSize/3, 6, robotSize * 2/3);
+                
+                ctx.restore();
+                
+                await sleep(30);
+            }
+        }
+
+        // Dibujar línea del trazo
+        function drawLine(x1, y1, x2, y2) {
+            const cellSize = app.robot.cellSize;
+            const fromX = x1 * cellSize + cellSize / 2;
+            const fromY = y1 * cellSize + cellSize / 2;
+            const toX = x2 * cellSize + cellSize / 2;
+            const toY = y2 * cellSize + cellSize / 2;
+            
+            ctx.strokeStyle = '#FF6347';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+            
+            // Guardar trazo
+            app.robot.trail.set(`${x1},${y1}-${x2},${y2}`, true);
+        }
+
+        // Dibujar todos los trazos guardados
+        function drawAllTrails() {
+            app.robot.trail.forEach((value, key) => {
+                const [from, to] = key.split('-');
+                const [x1, y1] = from.split(',').map(Number);
+                const [x2, y2] = to.split(',').map(Number);
+                drawLine(x1, y1, x2, y2);
+            });
+        }
+
+        // Redibujar todo
+        function redrawAll() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#f0f0f0';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            drawWalls();
+            drawGoal();
+            drawStart();
+            drawAllTrails();
+            drawRobot();
+        }
+
+        // Sleep
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Log output
+        function logOutput(message) {
+            const output = document.getElementById('robotOutput');
+            const time = new Date().toLocaleTimeString();
+            output.innerHTML = `[${time}] ${message}<br>` + output.innerHTML;
+            
+            // Limitar a 10 mensajes
+            const lines = output.innerHTML.split('<br>');
+            if (lines.length > 10) {
+                output.innerHTML = lines.slice(0, 10).join('<br>');
+            }
+        }
+
+        // Limpiar canvas
+        function clearRobotCanvas() {
+            app.robot.trail.clear();
+            app.robot.walls.clear();
+            app.robot.x = app.robot.startPoint.x;
+            app.robot.y = app.robot.startPoint.y;
+            app.robot.direction = 0;
+            app.robot.isPainting = false;
+            app.robot.goalPoint = null;
+            app.variables = {};
+            redrawAll();
+            logOutput('✨ Canvas limpio');
+        }
+
+        // Detener ejecución
+        function stopRobotCode() {
+            app.isRunning = false;
+            document.getElementById('runBtn').disabled = false;
+            logOutput('⏸ Ejecución detenida');
+        }
+
+        // Ejecutar código del robot
+        async function runRobotCode() {
+            if (app.isRunning) return;
+            
+            app.isRunning = true;
+            document.getElementById('runBtn').disabled = true;
+            
+            // Reset robot
+            app.robot.x = app.robot.startPoint.x;
+            app.robot.y = app.robot.startPoint.y;
+            app.robot.direction = 0;
+            app.robot.isPainting = false;
+            app.robot.trail.clear();
+            app.variables = {};
+            
+            redrawAll();
+            logOutput('▶ Ejecutando código...');
+            
+            const code = document.getElementById('robotCodeEditor').value;
+            
+            try {
+                await executeCode(code);
+                if (app.robot.goalPoint && esMeta()) {
+                    logOutput('🎉 ¡Meta alcanzada!');
+                }
+                logOutput('✅ Ejecución completa');
+            } catch (error) {
+                logOutput(`❌ Error: ${error.message}`);
+            }
+            
+            app.isRunning = false;
+            document.getElementById('runBtn').disabled = false;
+        }
+
+        // Parsear y ejecutar código
+        async function executeCode(code) {
+            const lines = code.split('\n').map(line => line.trim());
+            let i = 0;
+            
+            // Buscar INICIO
+            while (i < lines.length && !lines[i].startsWith('INICIO')) {
+                i++;
+            }
+            i++; // Saltar INICIO
+            
+            // Ejecutar hasta FIN
+            while (i < lines.length && !lines[i].startsWith('FIN')) {
+                if (!app.isRunning) break;
+                
+                const line = lines[i].trim();
+                
+                // Ignorar comentarios y líneas vacías
+                if (line === '' || line.startsWith('//')) {
+                    i++;
+                    continue;
+                }
+                
+                // Declarar variables
+                if (line.startsWith('DECLARAR')) {
+                    const varName = line.split(' ')[1];
+                    app.variables[varName] = 0;
+                    i++;
+                    continue;
+                }
+                
+                // Asignación de variable
+                if (line.includes('=') && !line.includes('==')) {
+                    const [varName, expression] = line.split('=').map(s => s.trim());
+                    if (app.variables.hasOwnProperty(varName)) {
+                        app.variables[varName] = evaluateExpression(expression);
+                    }
+                    i++;
+                    continue;
+                }
+                
+                // PARA loop
+                if (line.startsWith('PARA')) {
+                    const match = line.match(/PARA\s+(\w+)\s+DE\s+(\d+)\s+A\s+(\d+)/);
+                    if (match) {
+                        const [, varName, start, end] = match;
+                        const startVal = parseInt(start);
+                        const endVal = parseInt(end);
+                        const loopStart = i + 1;
+                        
+                        // Encontrar FINPARA
+                        let loopEnd = loopStart;
+                        let depth = 1;
+                        while (loopEnd < lines.length && depth > 0) {
+                            if (lines[loopEnd].startsWith('PARA')) depth++;
+                            if (lines[loopEnd].startsWith('FINPARA')) depth--;
+                            loopEnd++;
+                        }
+                        loopEnd--;
+                        
+                        // Ejecutar loop
+                        for (let val = startVal; val <= endVal; val++) {
+                            if (!app.isRunning) break;
+                            app.variables[varName] = val;
+                            const loopCode = lines.slice(loopStart, loopEnd).join('\n');
+                            await executeCode('INICIO\n' + loopCode + '\nFIN');
+                        }
+                        
+                        i = loopEnd + 1;
+                        continue;
+                    }
+                }
+                
+                // MIENTRAS loop
+                if (line.startsWith('MIENTRAS')) {
+                    const condition = line.substring(8).trim();
+                    const loopStart = i + 1;
+                    
+                    // Encontrar FINMIENTRAS
+                    let loopEnd = loopStart;
+                    let depth = 1;
+                    while (loopEnd < lines.length && depth > 0) {
+                        if (lines[loopEnd].startsWith('MIENTRAS')) depth++;
+                        if (lines[loopEnd].startsWith('FINMIENTRAS')) depth--;
+                        loopEnd++;
+                    }
+                    loopEnd--;
+                    
+                    // Ejecutar loop
+                    while (evaluateCondition(condition)) {
+                        if (!app.isRunning) break;
+                        const loopCode = lines.slice(loopStart, loopEnd).join('\n');
+                        await executeCode('INICIO\n' + loopCode + '\nFIN');
+                    }
+                    
+                    i = loopEnd + 1;
+                    continue;
+                }
+                
+                // SI condicional
+                if (line.startsWith('SI')) {
+                    const match = line.match(/SI\s+(.*?)\s+ENTONCES/);
+                    if (match) {
+                        const condition = match[1];
+                        const ifStart = i + 1;
+                        
+                        // Encontrar SINO o FINSI
+                        let elseStart = -1;
+                        let ifEnd = ifStart;
+                        let depth = 1;
+                        while (ifEnd < lines.length && depth > 0) {
+                            if (lines[ifEnd].startsWith('SI') && lines[ifEnd].includes('ENTONCES')) depth++;
+                            if (lines[ifEnd].startsWith('FINSI')) depth--;
+                            if (depth === 1 && lines[ifEnd].startsWith('SINO')) elseStart = ifEnd;
+                            ifEnd++;
+                        }
+                        ifEnd--;
+                        
+                        if (evaluateCondition(condition)) {
+                            const endIdx = elseStart > 0 ? elseStart : ifEnd;
+                            const ifCode = lines.slice(ifStart, endIdx).join('\n');
+                            await executeCode('INICIO\n' + ifCode + '\nFIN');
+                        } else if (elseStart > 0) {
+                            const elseCode = lines.slice(elseStart + 1, ifEnd).join('\n');
+                            await executeCode('INICIO\n' + elseCode + '\nFIN');
+                        }
+                        
+                        i = ifEnd + 1;
+                        continue;
+                    }
+                }
+                
+                // Comandos del robot
+                const cmdMatch = line.match(/^(\w+)\((.*?)\)$/);
+                if (cmdMatch) {
+                    const [, cmd, params] = cmdMatch;
+                    const param = params ? parseInt(params) : 1;
+                    
+                    switch(cmd) {
+                        case 'avanzar':
+                            await avanzar(param);
+                            break;
+                        case 'retroceder':
+                            await retroceder(param);
+                            break;
+                        case 'girarDerecha':
+                            await girarDerecha(param);
+                            break;
+                        case 'girarIzquierda':
+                            await girarIzquierda(param);
+                            break;
+                        case 'pintar':
+                            pintar();
+                            break;
+                        case 'noPintar':
+                            noPintar();
+                            break;
+                    }
+                    i++;
+                    continue;
+                }
+                
+                // Comandos sin parámetros
+                if (line === 'avanzar') { await avanzar(); i++; }
+                else if (line === 'retroceder') { await retroceder(); i++; }
+                else if (line === 'girarDerecha') { await girarDerecha(); i++; }
+                else if (line === 'girarIzquierda') { await girarIzquierda(); i++; }
+                else if (line === 'pintar') { pintar(); i++; }
+                else if (line === 'noPintar') { noPintar(); i++; }
+                else if (line === 'FINPARA' || line === 'FINMIENTRAS' || line === 'FINSI' || line === 'SINO') {
+                    i++;
+                } else {
+                    i++; // Saltar líneas no reconocidas
+                }
+            }
+        }
+
+        // Evaluar expresiones matemáticas
+        function evaluateExpression(expr) {
+            // Reemplazar variables
+            for (const [varName, varValue] of Object.entries(app.variables)) {
+                expr = expr.replace(new RegExp(`\\b${varName}\\b`, 'g'), varValue);
+            }
+            
+            // Evaluar expresión
+            try {
+                return eval(expr);
+            } catch (e) {
+                return 0;
+            }
+        }
+
+        // Evaluar condiciones
+        function evaluateCondition(condition) {
+            // Reemplazar funciones especiales
+            condition = condition.replace(/hayMuro\(\)/g, hayMuro());
+            condition = condition.replace(/esMeta\(\)/g, esMeta());
+            
+            // Reemplazar variables
+            for (const [varName, varValue] of Object.entries(app.variables)) {
+                condition = condition.replace(new RegExp(`\\b${varName}\\b`, 'g'), varValue);
+            }
+            
+            // Evaluar condición
+            try {
+                return eval(condition);
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // Cargar ejemplos
+        function loadExample(exampleId) {
+            const examples = {
+                demo: {
+                    name: "Demo - Funcionalidades",
+                    code: `INICIO
+    // Tu código aquí
+    
+FIN`,
+                    walls: [
+                        "10,5", "10,6", "10,7", "10,8", "10,9"
+                    ],
+                    start: {x: 7, y: 7},
+                    goal: {x: 12, y: 7}
+                },
+                
+                map1: {
+                    name: "Reto 1 - Laberinto Simple",
+                    code: `INICIO
+    // Navega hasta la meta esquivando los muros
+    
+FIN`,
+                    walls: [
+                        "5,5", "6,5", "7,5", "8,5", "9,5", "10,5", "11,5",
+                        "5,6", "11,6",
+                        "5,7", "7,7", "8,7", "9,7", "11,7",
+                        "5,8", "7,8", "11,8",
+                        "5,9", "6,9", "7,9", "8,9", "9,9", "10,9", "11,9"
+                    ],
+                    start: {x: 6, y: 7},
+                    goal: {x: 10, y: 8}
+                },
+                
+                map2: {
+                    name: "Reto 2 - Camino en Zigzag",
+                    code: `INICIO
+    // Sigue el camino zigzagueante hasta la meta
+    
+FIN`,
+                    walls: [
+                        "3,3", "4,3", "5,3", "6,3", "7,3", "8,3", "9,3",
+                        "3,4", "9,4",
+                        "3,5", "5,5", "6,5", "7,5", "9,5",
+                        "3,6", "5,6", "9,6",
+                        "3,7", "4,7", "5,7", "6,7", "7,7", "8,7", "9,7"
+                    ],
+                    start: {x: 4, y: 4},
+                    goal: {x: 8, y: 6}
+                },
+                
+                map3: {
+                    name: "Reto 3 - Esquinas",
+                    code: `INICIO
+    // Recorre el perímetro del cuadrado y regresa al inicio
+    
+FIN`,
+                    walls: [],
+                    start: {x: 3, y: 3},
+                    goal: {x: 3, y: 3}
+                },
+                
+                map4: {
+                    name: "Reto 4 - Laberinto en U",
+                    code: `INICIO
+    // Rodea el obstáculo en forma de U
+    
+FIN`,
+                    walls: [
+                        "6,4", "7,4", "8,4",
+                        "6,5", "8,5",
+                        "6,6", "8,6",
+                        "6,7", "7,7", "8,7"
+                    ],
+                    start: {x: 5, y: 6},
+                    goal: {x: 9, y: 6}
+                },
+                
+                map5: {
+                    name: "Reto 5 - Escalera",
+                    code: `INICIO
+    // Sube la escalera hasta la meta
+    
+FIN`,
+                    walls: [
+                        "4,10", "5,10", "6,10", "7,10", "8,10", "9,10",
+                        "5,9", "6,9", "7,9", "8,9", "9,9",
+                        "6,8", "7,8", "8,8", "9,8",
+                        "7,7", "8,7", "9,7",
+                        "8,6", "9,6"
+                    ],
+                    start: {x: 4, y: 11},
+                    goal: {x: 9, y: 6}
+                },
+                
+                map6: {
+                    name: "Reto 6 - Espiral",
+                    code: `INICIO
+    // Navega en espiral hasta el centro
+    
+FIN`,
+                    walls: [
+                        "5,5", "6,5", "7,5", "8,5", "9,5", "10,5", "11,5",
+                        "5,6", "11,6",
+                        "5,7", "7,7", "8,7", "9,7", "11,7",
+                        "5,8", "7,8", "9,8", "11,8",
+                        "5,9", "6,9", "7,9", "8,9", "9,9", "10,9", "11,9"
+                    ],
+                    start: {x: 6, y: 6},
+                    goal: {x: 8, y: 8}
+                },
+                
+                map7: {
+                    name: "Reto 7 - Cruz",
+                    code: `INICIO
+    // Dibuja una cruz y alcanza la meta
+    
+FIN`,
+                    walls: [],
+                    start: {x: 10, y: 7},
+                    goal: {x: 14, y: 7}
+                },
+                
+                map8: {
+                    name: "Reto 8 - Laberinto Complejo",
+                    code: `INICIO
+    // Usa los sensores para resolver el laberinto
+    
+FIN`,
+                    walls: [
+                        "3,3", "4,3", "5,3", "6,3", "7,3", "8,3", "9,3", "10,3", "11,3", "12,3", "13,3",
+                        "3,4", "7,4", "13,4",
+                        "3,5", "5,5", "7,5", "9,5", "10,5", "11,5", "13,5",
+                        "3,6", "5,6", "7,6", "9,6", "11,6", "13,6",
+                        "3,7", "5,7", "9,7", "11,7", "13,7",
+                        "3,8", "5,8", "6,8", "7,8", "9,8", "11,8", "13,8",
+                        "3,9", "5,9", "11,9", "13,9",
+                        "3,10", "4,10", "5,10", "6,10", "7,10", "8,10", "9,10", "10,10", "11,10", "12,10", "13,10"
+                    ],
+                    start: {x: 4, y: 4},
+                    goal: {x: 12, y: 9}
+                },
+                
+                map9: {
+                    name: "Reto 9 - Serpentina",
+                    code: `INICIO
+    // Sigue el camino serpenteante
+    
+FIN`,
+                    walls: [],
+                    start: {x: 2, y: 3},
+                    goal: {x: 2, y: 9}
+                },
+                
+                map10: {
+                    name: "Reto 10 - Desafío Final",
+                    code: `INICIO
+    // Desafío final - Usa todos los conceptos aprendidos
+    
+FIN`,
+                    walls: [
+                        "2,2", "3,2", "4,2", "5,2", "6,2", "7,2", "8,2", "9,2", "10,2", "11,2", "12,2", "13,2", "14,2",
+                        "2,3", "14,3",
+                        "2,4", "4,4", "5,4", "6,4", "8,4", "9,4", "10,4", "12,4", "14,4",
+                        "2,5", "4,5", "12,5", "14,5",
+                        "2,6", "4,6", "6,6", "7,6", "8,6", "10,6", "12,6", "14,6",
+                        "2,7", "4,7", "6,7", "10,7", "12,7", "14,7",
+                        "2,8", "4,8", "6,8", "7,8", "8,8", "9,8", "10,8", "12,8", "14,8",
+                        "2,9", "4,9", "14,9",
+                        "2,10", "4,10", "5,10", "6,10", "7,10", "8,10", "9,10", "10,10", "11,10", "12,10", "14,10",
+                        "2,11", "14,11",
+                        "2,12", "3,12", "4,12", "5,12", "6,12", "7,12", "8,12", "9,12", "10,12", "11,12", "12,12", "13,12", "14,12"
+                    ],
+                    start: {x: 3, y: 3},
+                    goal: {x: 13, y: 11}
+                },
+                
+                map11: {
+                    name: "Reto 11 - Pasillo Estrecho",
+                    code: `INICIO
+    // Navega por el pasillo estrecho
+    
+FIN`,
+                    walls: [
+                        "4,3", "5,3", "6,3", "7,3", "8,3", "9,3", "10,3", "11,3", "12,3",
+                        "4,5", "5,5", "6,5", "7,5", "8,5", "9,5", "10,5", "11,5", "12,5"
+                    ],
+                    start: {x: 3, y: 4},
+                    goal: {x: 13, y: 4}
+                },
+                
+                map12: {
+                    name: "Reto 12 - Cuatro Habitaciones",
+                    code: `INICIO
+    // Recorre las cuatro habitaciones
+    
+FIN`,
+                    walls: [
+                        "2,2", "3,2", "4,2", "5,2", "7,2", "8,2", "9,2", "10,2", "11,2", "12,2",
+                        "2,3", "12,3",
+                        "2,4", "12,4",
+                        "2,5", "3,5", "4,5", "5,5", "7,5", "8,5", "9,5", "10,5", "11,5", "12,5",
+                        "2,6", "5,6", "7,6", "12,6",
+                        "2,7", "5,7", "7,7", "12,7",
+                        "2,8", "3,8", "4,8", "5,8", "7,8", "8,8", "9,8", "10,8", "11,8", "12,8"
+                    ],
+                    start: {x: 3, y: 3},
+                    goal: {x: 11, y: 7}
+                },
+                
+                map13: {
+                    name: "Reto 13 - Isla Central",
+                    code: `INICIO
+    // Rodea la isla central para llegar a la meta
+    
+FIN`,
+                    walls: [
+                        "6,5", "7,5", "8,5", "9,5",
+                        "6,6", "9,6",
+                        "6,7", "9,7",
+                        "6,8", "7,8", "8,8", "9,8"
+                    ],
+                    start: {x: 5, y: 5},
+                    goal: {x: 10, y: 8}
+                },
+                
+                map14: {
+                    name: "Reto 14 - Laberinto Diagonal",
+                    code: `INICIO
+    // Navega por el laberinto diagonal
+    
+FIN`,
+                    walls: [
+                        "3,3", "4,4", "5,5", "6,6", "7,7", "8,8", "9,9",
+                        "4,3", "5,4", "6,5", "7,6", "8,7", "9,8", "10,9",
+                        "11,3", "10,4", "9,5", "8,6", "7,7", "6,8", "5,9",
+                        "12,3", "11,4", "10,5", "9,6", "8,7", "7,8", "6,9"
+                    ],
+                    start: {x: 2, y: 2},
+                    goal: {x: 12, y: 10}
+                },
+                
+                map15: {
+                    name: "Reto 15 - Torre de Obstáculos",
+                    code: `INICIO
+    // Sube la torre esquivando obstáculos
+    
+FIN`,
+                    walls: [
+                        "5,12", "6,12", "7,12", "8,12", "9,12", "10,12",
+                        "5,11", "10,11",
+                        "7,10", "8,10",
+                        "5,9", "10,9",
+                        "5,8", "6,8", "9,8", "10,8",
+                        "8,7", 
+                        "5,6", "10,6",
+                        "5,5", "7,5", "8,5", "10,5",
+                        "6,4",
+                        "5,3", "10,3",
+                        "5,2", "6,2", "7,2", "8,2", "9,2", "10,2"
+                    ],
+                    start: {x: 7, y: 13},
+                    goal: {x: 9, y: 2}
+                },
+                
+                // Figuras geométricas
+                fig1: {
+                    name: "Figura 1 - Cuadrado Simple",
+                    code: `INICIO
+    // Dibuja un cuadrado de 4x4
+    
+FIN`,
+                    walls: [],
+                    start: {x: 5, y: 5},
+                    goal: null
+                },
+                
+                fig2: {
+                    name: "Figura 2 - Rectángulo",
+                    code: `INICIO
+    // Dibuja un rectángulo de 6x3
+    
+FIN`,
+                    walls: [],
+                    start: {x: 4, y: 6},
+                    goal: null
+                },
+                
+                fig3: {
+                    name: "Figura 3 - Escalera Ascendente",
+                    code: `INICIO
+    // Dibuja una escalera de 5 escalones
+    
+FIN`,
+                    walls: [],
+                    start: {x: 3, y: 10},
+                    goal: null
+                },
+                
+                fig4: {
+                    name: "Figura 4 - Zigzag",
+                    code: `INICIO
+    // Dibuja un patrón zigzag
+    
+FIN`,
+                    walls: [],
+                    start: {x: 2, y: 5},
+                    goal: null
+                },
+                
+                fig5: {
+                    name: "Figura 5 - Espiral Cuadrada",
+                    code: `INICIO
+    // Dibuja una espiral cuadrada
+    
+FIN`,
+                    walls: [],
+                    start: {x: 10, y: 10},
+                    goal: null
+                },
+                
+                fig6: {
+                    name: "Figura 6 - Cruz",
+                    code: `INICIO
+    // Dibuja una cruz
+    
+FIN`,
+                    walls: [],
+                    start: {x: 7, y: 7},
+                    goal: null
+                },
+                
+                fig7: {
+                    name: "Figura 7 - Diamante",
+                    code: `INICIO
+    // Dibuja un diamante
+    
+FIN`,
+                    walls: [],
+                    start: {x: 7, y: 7},
+                    goal: null
+                },
+                
+                fig8: {
+                    name: "Figura 8 - Letras L",
+                    code: `INICIO
+    // Dibuja 3 letras L
+    
+FIN`,
+                    walls: [],
+                    start: {x: 1, y: 1},
+                    goal: null
+                },
+                
+                fig9: {
+                    name: "Figura 9 - Patrón de Peine",
+                    code: `INICIO
+    // Dibuja un patrón de peine
+    
+FIN`,
+                    walls: [],
+                    start: {x: 2, y: 8},
+                    goal: null
+                },
+                
+                fig10: {
+                    name: "Figura 10 - Escalones",
+                    code: `INICIO
+    // Dibuja escalones alternados
+    
+FIN`,
+                    walls: [],
+                    start: {x: 2, y: 10},
+                    goal: null
+                },
+                
+                fig11: {
+                    name: "Figura 11 - Laberinto en Espiral",
+                    code: `INICIO
+    // Dibuja un laberinto en espiral
+    
+FIN`,
+                    walls: [],
+                    start: {x: 2, y: 2},
+                    goal: null
+                },
+                
+                fig12: {
+                    name: "Figura 12 - Patrón de Ondas",
+                    code: `INICIO
+    // Dibuja un patrón de ondas
+    
+FIN`,
+                    walls: [],
+                    start: {x: 1, y: 8},
+                    goal: null
+                },
+                
+                fig13: {
+                    name: "Figura 13 - Tablero de Ajedrez",
+                    code: `INICIO
+    // Dibuja un tablero de ajedrez 4x4
+    
+FIN`,
+                    walls: [],
+                    start: {x: 4, y: 4},
+                    goal: null
+                },
+                
+                fig14: {
+                    name: "Figura 14 - Estrella",
+                    code: `INICIO
+    // Dibuja una estrella de 5 puntas
+    
+FIN`,
+                    walls: [],
+                    start: {x: 10, y: 10},
+                    goal: null
+                },
+                
+                fig15: {
+                    name: "Figura 15 - Flor",
+                    code: `INICIO
+    // Dibuja una flor con 8 pétalos
+    
+FIN`,
+                    walls: [],
+                    start: {x: 10, y: 10},
+                    goal: null
+                }
+            };
+            
+            const example = examples[exampleId];
+            if (!example) return;
+            
+            // Limpiar todo
+            clearRobotCanvas();
+            
+            // Cargar código
+            document.getElementById('robotCodeEditor').value = example.code;
+            
+            // Configurar muros
+            if (example.walls) {
+                example.walls.forEach(pos => {
+                    app.robot.walls.set(pos, '#808080');
+                });
+            }
+            
+            // Configurar punto de inicio
+            if (example.start) {
+                app.robot.startPoint = example.start;
+                app.robot.x = example.start.x;
+                app.robot.y = example.start.y;
+            }
+            
+            // Configurar meta
+            if (example.goal) {
+                app.robot.goalPoint = example.goal;
+            }
+            
+            redrawAll();
+            logOutput(`📚 ${example.name} cargado`);
+        }
+
+        // Inicializar
+        window.addEventListener('load', () => {
+            initCanvas();
+            selectTool('wall');
+            canvas.style.cursor = 'pointer';
+            logOutput('🤖 Robot listo');
+            logOutput('💾 Usa Guardar/Abrir para tus algoritmos');
+            logOutput('Designed by Hansel Peña Diaz');
+        });
+    </script>
+</body>
+</html>
