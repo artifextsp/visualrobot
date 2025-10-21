@@ -900,10 +900,6 @@ FIN</textarea>
             if (isDraggingRobot) {
                 isDraggingRobot = false;
                 canvas.style.cursor = 'default';
-                // Actualizar el punto de partida al soltar el robot
-                app.robot.startPoint.x = app.robot.x;
-                app.robot.startPoint.y = app.robot.y;
-                redrawAll(); // Redibujar para actualizar el círculo azul
                 logOutput(`🤖 Robot movido a (${app.robot.x}, ${app.robot.y})`);
             }
         });
