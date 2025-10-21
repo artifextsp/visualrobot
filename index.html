@@ -762,6 +762,7 @@ FIN</textarea>
             } else {
                 canvas.style.cursor = 'default';
                 logOutput('🎮 Modo ejecución activo');
+                logOutput('💡 Puedes arrastrar el robot con el mouse');
             }
         }
         
@@ -821,6 +822,98 @@ FIN</textarea>
                     break;
             }
             redrawAll();
+        });
+        
+        // Variables para arrastrar el robot
+        let isDraggingRobot = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        
+        // Detectar si el mouse está sobre el robot
+        function isMouseOverRobot(mouseX, mouseY) {
+            const cellSize = app.robot.cellSize;
+            const robotCenterX = app.robot.x * cellSize + cellSize / 2;
+            const robotCenterY = app.robot.y * cellSize + cellSize / 2;
+            const robotSize = cellSize * 0.7;
+            
+            return Math.abs(mouseX - robotCenterX) < robotSize/2 && 
+                   Math.abs(mouseY - robotCenterY) < robotSize/2;
+        }
+        
+        // Evento mousedown para iniciar arrastre del robot
+        canvas.addEventListener('mousedown', function(e) {
+            if (app.mode !== 'exec') return; // Solo en modo ejecución
+            
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            if (isMouseOverRobot(mouseX, mouseY)) {
+                isDraggingRobot = true;
+                dragStartX = mouseX;
+                dragStartY = mouseY;
+                canvas.style.cursor = 'grabbing';
+                e.preventDefault();
+            }
+        });
+        
+        // Evento mousemove para arrastrar el robot
+        canvas.addEventListener('mousemove', function(e) {
+            if (app.mode !== 'exec') return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            // Cambiar cursor cuando está sobre el robot
+            if (!isDraggingRobot) {
+                if (isMouseOverRobot(mouseX, mouseY)) {
+                    canvas.style.cursor = 'grab';
+                } else {
+                    canvas.style.cursor = 'default';
+                }
+            }
+            
+            // Si estamos arrastrando el robot
+            if (isDraggingRobot) {
+                const cellSize = app.robot.cellSize;
+                const newX = Math.floor(mouseX / cellSize);
+                const newY = Math.floor(mouseY / cellSize);
+                
+                // Verificar límites del canvas
+                const maxX = Math.floor(canvas.width / cellSize) - 1;
+                const maxY = Math.floor(canvas.height / cellSize) - 1;
+                
+                if (newX >= 0 && newX <= maxX && newY >= 0 && newY <= maxY) {
+                    // Verificar que no haya un muro en esa posición
+                    if (!app.robot.walls.has(`${newX},${newY}`)) {
+                        app.robot.x = newX;
+                        app.robot.y = newY;
+                        redrawAll();
+                    }
+                }
+            }
+        });
+        
+        // Evento mouseup para soltar el robot
+        canvas.addEventListener('mouseup', function(e) {
+            if (isDraggingRobot) {
+                isDraggingRobot = false;
+                canvas.style.cursor = 'default';
+                // Actualizar el punto de partida al soltar el robot
+                app.robot.startPoint.x = app.robot.x;
+                app.robot.startPoint.y = app.robot.y;
+                redrawAll(); // Redibujar para actualizar el círculo azul
+                logOutput(`🤖 Robot movido a (${app.robot.x}, ${app.robot.y})`);
+            }
+        });
+        
+        // Evento mouseleave para cancelar el arrastre si el mouse sale del canvas
+        canvas.addEventListener('mouseleave', function(e) {
+            if (isDraggingRobot) {
+                isDraggingRobot = false;
+                canvas.style.cursor = 'default';
+            }
         });
         
         // Inicializar canvas
@@ -1983,6 +2076,7 @@ FIN`,
             selectTool('wall');
             canvas.style.cursor = 'pointer';
             logOutput('🤖 Robot listo');
+            logOutput('🎮 En modo ejecución puedes arrastrar el robot');
             logOutput('💾 Usa Guardar/Abrir para tus algoritmos');
             logOutput('Designed by Hansel Peña Diaz');
         });
